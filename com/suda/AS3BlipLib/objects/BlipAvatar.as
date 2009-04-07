@@ -3,11 +3,17 @@ package com.suda.AS3BlipLib.objects
 	public class BlipAvatar
 	{
 		public var id:int;
+		[Bindable]
 		public var url:String;
+		[Bindable]
 		public var url15:String;
+		[Bindable]
 		public var url30:String;
+		[Bindable]
 		public var url50:String;
+		[Bindable]
 		public var url90:String;
+		[Bindable]
 		public var url120:String;
 		
 		public function BlipAvatar(data:Object = null)
@@ -21,7 +27,7 @@ package com.suda.AS3BlipLib.objects
 				   Przydało by się coś a'la url_base ;)
 				   Na razie ustawione na sztywno.  
 				*/
-				var urlBase = 'http://www.blip.pl';
+				var urlBase:String = 'http://www.blip.pl';
 				this.url15 = urlBase+data.url_15;
 				this.url30 = urlBase+data.url_30;
 				this.url50 = urlBase+data.url_50;

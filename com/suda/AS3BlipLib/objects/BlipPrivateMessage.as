@@ -1,6 +1,6 @@
 package com.suda.AS3BlipLib.objects
 {
-	public class BlipDirectedMessage extends BlipUpdate
+	public class BlipPrivateMessage extends BlipUpdate
 	{
 		[Bindable]
 		public var recipientPath:String;
@@ -8,7 +8,7 @@ package com.suda.AS3BlipLib.objects
 		[Bindable]
 		public var recipient:BlipUser;
 		
-		public function BlipDirectedMessage(data:Object = null)
+		public function BlipPrivateMessage(data:Object = null)
 		{
 			super(data);
 			

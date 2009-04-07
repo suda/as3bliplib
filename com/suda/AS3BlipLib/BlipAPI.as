@@ -7,11 +7,13 @@ package com.suda.AS3BlipLib
 	import com.arc90.rpc.events.ResultEvent;
 	import com.arc90.rpc.rest.*;
 	import com.hurlant.util.Base64;
+	import com.suda.*;
 	import com.suda.AS3BlipLib.events.*;
 	import com.suda.AS3BlipLib.objects.*;
 	
 	import flash.events.*;
 	import flash.net.*;
+	import flash.utils.*;
 	
 	[Event(name="onGetBliposphere", type="com.suda.AS3BlipLib.events.BlipResultEvent")]
 	[Event(name="onGetDashboard", type="com.suda.AS3BlipLib.events.BlipResultEvent")]
@@ -57,8 +59,8 @@ package com.suda.AS3BlipLib
 		private var Service:RESTService;
 		
 		private var limit:int = 50;
-		private var username:String = '';
-		private var passwd:String = '';
+		public var username:String = '';
+		public var passwd:String = '';
 		private var rootURL:String = 'http://api.blip.pl';
 		
 		public static const AS3_BLIP_LIB_VERSION:String = "0.2";
@@ -66,20 +68,20 @@ package com.suda.AS3BlipLib
 		public function BlipAPI(AppName:String="AS3BlipLib")
 		{
 			this.AppName = AppName;
-  			 
+  			/*  
 			this.Service = new RESTService('http://api.blip.pl');
 			 	
 			this.Service.resultFormat = RESTService.RESULT_FORMAT_JSON;
 			this.Service.contentType = RESTService.CONTENT_TYPE_JSON;
 		 	this.Service.userAgent = this.AppName;
 		 	this.Service.headers = {'X-Blip-API': '0.02'};
-		 
+		  */
 		}
 		
 		public function LogIn(username:String, passwd:String):void {
 			this.username = username;
 			this.passwd = passwd;
-			this.Service.setCredentials(this.username, this.passwd);
+			//this.Service.setCredentials(this.username, this.passwd);
 			
 			// TODO: Weryfikacja zalogowania			
 			//this.GetUser(this.username);
@@ -88,13 +90,20 @@ package com.suda.AS3BlipLib
  		/***************************************************
 		 * Bliposphere
 		 ***************************************************/
-		public function GetBliposphere():void
+		public function GetBliposphere(includeResources:Array = null):void
 		{	
 			var urlRequest:URLRequest;
             var urlLoader:DynamicURLLoader = getURLLoader();
-            urlRequest = getURLRequest('/bliposphere', URLRequestMethod.GET, null);
+            var url:String = '/bliposphere';
+            
+            url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			
+            urlRequest = getURLRequest(url, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetBliposphere);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+            urlLoader.addEventListener(Event.COMPLETE, onComplete);
+            urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.load(urlRequest);
 		}
 		
@@ -111,12 +120,12 @@ package com.suda.AS3BlipLib
 		/***************************************************
 		 * Dashboard
 		 ***************************************************/
-		public function GetDashboard(since:int = -1):void
+		public function GetDashboard(since:int = -1, includeResources:Array = null):void
 		{
-            GetUserDashboard(this.username, since);					
+            GetUserDashboard(this.username, since, includeResources);					
 		}
 		
-		public function GetUserDashboard(login:String, since:int = -1):void
+		public function GetUserDashboard(login:String, since:int = -1, includeResources:Array = null):void
 		{
 			var url:String;
 			if (this.username == login) {
@@ -127,13 +136,18 @@ package com.suda.AS3BlipLib
 			
 			if (-1 < since) {
 				url += '/since/'+since;
-			}	
+			}
+						
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';	
 			
 			var urlRequest:URLRequest;
             var urlLoader:DynamicURLLoader = getURLLoader();
             urlRequest = getURLRequest(url, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserDashboard);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = login;
             urlLoader.load(urlRequest);				
 		}
@@ -169,6 +183,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUser);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.load(urlRequest);
 		}
 		
@@ -208,6 +225,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/statuses'+sinceStr+limitStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserStatuses);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = '';
             urlLoader.load(urlRequest);
 		}
@@ -229,6 +249,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(url, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserStatuses);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = login;
             urlLoader.load(urlRequest);			
 		}
@@ -262,6 +285,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetStatus);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.load(urlRequest);
 		}
 		
@@ -288,9 +314,15 @@ package com.suda.AS3BlipLib
             if (null == file) {
             	var urlLoader:DynamicURLLoader = getURLLoader();
 	            urlLoader.addEventListener(Event.COMPLETE, onSetStatus);
+	            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				urlLoader.addEventListener(Event.COMPLETE, onComplete);
+				urlLoader.addEventListener(Event.OPEN, onOpen);
 	            urlLoader.load(urlRequest);
             } else {
             	file.addEventListener(Event.COMPLETE, onSetStatus);
+            	file.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				file.addEventListener(Event.COMPLETE, onComplete);
+				file.addEventListener(Event.OPEN, onOpen);
             	file.upload(urlRequest, "status[picture]");	
             }
 		}
@@ -350,6 +382,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetAvatar);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -360,6 +395,7 @@ package com.suda.AS3BlipLib
 			var blipAvatar:BlipAvatar = new BlipAvatar(JSON.decode(event.target.data));
 			var blipResultEvent:BlipResultEvent = new BlipResultEvent(BlipResultEvent.ON_GET_AVATAR);
 			blipResultEvent.data = blipAvatar;
+			blipResultEvent.path = event.target.path;
 			dispatchEvent(blipResultEvent);
 
 		}
@@ -372,6 +408,9 @@ package com.suda.AS3BlipLib
             urlRequest.data = null;
             
             file.addEventListener(Event.COMPLETE, onSetAvatar);
+            file.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			file.addEventListener(Event.COMPLETE, onComplete);
+			file.addEventListener(Event.OPEN, onOpen);
             file.upload(urlRequest, "avatar[file]");	
 		}
 		
@@ -397,6 +436,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetBackground);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -419,6 +461,9 @@ package com.suda.AS3BlipLib
             urlRequest.data = null;
             
             file.addEventListener(Event.COMPLETE, onSetBackground);
+            file.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			file.addEventListener(Event.COMPLETE, onComplete);
+			file.addEventListener(Event.OPEN, onOpen);
             file.upload(urlRequest, "background[file]");	
 		}
 		
@@ -455,6 +500,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/updates'+sinceStr+limitStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserUpdates);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = '';
             urlLoader.load(urlRequest);
 		}
@@ -476,6 +524,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(url, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserUpdates);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = login;
             urlLoader.load(urlRequest);					
 		}
@@ -509,6 +560,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUpdate);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -518,11 +572,14 @@ package com.suda.AS3BlipLib
 		{
 			var data:Object = JSON.decode(event.target.data);
 			var blipUpdate:*;
-			if ('Status' == data.type) {
+			if (BlipUpdate.UPDATE_TYPE_STATUS == data.type) {
 				blipUpdate = new BlipStatus(data);
-			} else if ('DirectedMessage' == data.type) {
+			} else if (BlipUpdate.UPDATE_TYPE_DM == data.type) {
 				blipUpdate = new BlipDirectedMessage(data);
+			} else if (BlipUpdate.UPDATE_TYPE_PM == data.type) {
+				blipUpdate = new BlipPrivateMessage(data);
 			}
+			
 			var blipResultEvent:BlipResultEvent = new BlipResultEvent(BlipResultEvent.ON_GET_UPDATE);
 			blipResultEvent.data = blipUpdate;
 			dispatchEvent(blipResultEvent);
@@ -537,14 +594,21 @@ package com.suda.AS3BlipLib
 			
 			var urlRequest:URLRequest;
             urlRequest = getURLRequest("/updates", URLRequestMethod.POST, null);
-            urlRequest.data = "update[body]="+escape(text);
+            urlRequest.data = "update[body]="+escapeMultiByte(text);
+            
             
             if (null == file) {
             	var urlLoader:DynamicURLLoader = getURLLoader();
 	            urlLoader.addEventListener(Event.COMPLETE, onSendUpdate);
+	            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				urlLoader.addEventListener(Event.COMPLETE, onComplete);
+				urlLoader.addEventListener(Event.OPEN, onOpen);
 	            urlLoader.load(urlRequest);
             } else {
             	file.addEventListener(Event.COMPLETE, onSendUpdate);
+            	file.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				file.addEventListener(Event.COMPLETE, onComplete);
+				file.addEventListener(Event.OPEN, onOpen);
             	file.upload(urlRequest, "update[picture]");	
             }
 		}
@@ -604,6 +668,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/directed_messages'+sinceStr+limitStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserDms);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = '';
             urlLoader.load(urlRequest);
 		}
@@ -625,6 +692,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(url, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUserDms);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.login = login;
             urlLoader.load(urlRequest);					
 		}
@@ -657,6 +727,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetDm);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -685,10 +758,16 @@ package com.suda.AS3BlipLib
             if (null == file) {
             	var urlLoader:DynamicURLLoader = getURLLoader();
 	            urlLoader.addEventListener(Event.COMPLETE, onSendDm);
+	            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				urlLoader.addEventListener(Event.COMPLETE, onComplete);
+				urlLoader.addEventListener(Event.OPEN, onOpen);
 	            urlLoader.load(urlRequest);
             } else {
             	if ('' != file.name) {
             		file.addEventListener(Event.COMPLETE, onSendDm);
+            		file.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+					file.addEventListener(Event.COMPLETE, onComplete);
+					file.addEventListener(Event.OPEN, onOpen);
             		file.upload(urlRequest, "directed_message[picture]");
             	}	
             }
@@ -738,6 +817,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetMovie);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -767,6 +849,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetRecording);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}
@@ -796,6 +881,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUpdatePictures);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = path;
             urlLoader.load(urlRequest);
 		}				
@@ -818,6 +906,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/pictures/'+sinceStr+limitStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetUpdatePictures);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.path = '';
             urlLoader.load(urlRequest);				
 		}
@@ -826,7 +917,7 @@ package com.suda.AS3BlipLib
 		public function onGetUpdatePictures(event:Event):void
 		{
 			var data:Object = JSON.decode(event.target.data);
-			var blipPictures:BlipArrayCollection = new BlipArrayCollection();
+			var blipPictures:CustomArrayCollection = new CustomArrayCollection();
 			
 			for each (var item:Object in data) {
 				var picture:BlipPicture = new BlipPicture(item);										
@@ -864,6 +955,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/shortlinks/'+sinceStr+limitStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetShortlinks);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.load(urlRequest);				
 		}
 		
@@ -871,7 +965,7 @@ package com.suda.AS3BlipLib
 		public function onGetShortlinks(event:Event):void
 		{
 			var data:Object = JSON.decode(event.target.data);
-			var blipShortlinks:BlipArrayCollection = new BlipArrayCollection();
+			var blipShortlinks:CustomArrayCollection = new CustomArrayCollection();
 			
 			for each (var item:Object in data) {
 				var shortlink:BlipShortlink = new BlipShortlink(item);										
@@ -887,34 +981,46 @@ package com.suda.AS3BlipLib
 		/***************************************************
 		 * Subscriptions
 		 ***************************************************/
-		public function GetSubs():void
+		public function GetSubs(includeResources:Array = null):void
 		{			
-			this.GetSubsByPath('/subscriptions', 'subs');
+			var url:String = '/subscriptions';
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'subs');
 		}
 		
-		public function GetSubsFrom():void
-		{			
-			this.GetSubsByPath('/subscriptions/from', 'from');
+		public function GetSubsFrom(includeResources:Array = null):void
+		{		
+			var url:String = '/subscriptions/from';	
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'from');
 		}
 		
-		public function GetSubsTo():void
+		public function GetSubsTo(includeResources:Array = null):void
 		{			
-			this.GetSubsByPath('/subscriptions/to', 'to');
+			var url:String = '/subscriptions/to';
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'to');
 		}
 		
-		public function GetUserSubs(login:String):void
+		public function GetUserSubs(login:String, includeResources:Array = null):void
 		{			
-			this.GetSubsByPath('/users/'+login+'/subscriptions', 'user');
+			var url:String = '/users/'+login+'/subscriptions';
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'user');
 		}
 		
-		public function GetUserSubsFrom(login:String):void
+		public function GetUserSubsFrom(login:String, includeResources:Array = null):void
 		{			
-			this.GetSubsByPath('/users/'+login+'/subscriptions/from', 'userFrom');
+			var url:String = '/users/'+login+'/subscriptions/from';
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'userFrom');
 		}
 		
-		public function GetUserSubsTo(login:String):void
+		public function GetUserSubsTo(login:String, includeResources:Array = null):void
 		{			
-			this.GetSubsByPath('/users/'+login+'/subscriptions/to', 'userTo');
+			var url:String = '/users/'+login+'/subscriptions/to';
+			url += (null != includeResources) ? '?include=' + includeResources.join(',') : '';
+			this.GetSubsByPath(url, 'userTo');
 		}
 		
 		public function GetSubsByPath(path:String, type:String):void
@@ -924,6 +1030,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest(path, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetSubs);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.type = type;
             urlLoader.load(urlRequest);	
 		}
@@ -932,11 +1041,23 @@ package com.suda.AS3BlipLib
 		public function onGetSubs(event:Event):void
 		{
 			var data:Object = JSON.decode(event.target.data);
-			var blipSubscriptions:BlipArrayCollection = new BlipArrayCollection();
+			var blipSubscriptions:CustomArrayCollection = new CustomArrayCollection();
+			var trackingUserPath:String;
+			var trackedUserPath:String;
 			
 			for each (var item:Object in data) {
-				var subscription:BlipSubscription = new BlipSubscription(item);										
-				blipSubscriptions.addItem(subscription);
+				trackingUserPath = (item.hasOwnProperty('tracking_user_path')) ? item.tracking_user_path : '/users/'+ item.tracking_user.login;
+				trackedUserPath = (item.hasOwnProperty('tracked_user_path')) ? item.tracked_user_path : '/users/'+ item.tracked_user.login;
+				
+				var subscription:BlipSubscription = 
+						blipSubscriptions.getByMany([{name:'trackingUserPath', value:trackingUserPath},
+													 {name:'trackedUserPath', value:trackedUserPath}]);
+				if (null == subscription) {										
+					subscription = new BlipSubscription(item);
+					blipSubscriptions.addItem(subscription);	
+				} else {
+					subscription.transports.push(new BlipTransport(item.transport));
+				}
 			}
 			
 			var blipResultEvent:BlipResultEvent;
@@ -1031,6 +1152,9 @@ package com.suda.AS3BlipLib
             urlRequest = getURLRequest('/tags/'+tag+limitStr+sinceStr, URLRequestMethod.GET, null);
                         
             urlLoader.addEventListener(Event.COMPLETE, onGetTagUpdates);
+            urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+			urlLoader.addEventListener(Event.COMPLETE, onComplete);
+			urlLoader.addEventListener(Event.OPEN, onOpen);
             urlLoader.tag = tag;
             urlLoader.load(urlRequest);				
 		}
@@ -1057,6 +1181,9 @@ package com.suda.AS3BlipLib
 		private function getURLRequest(url:String, method:String, urlVariables:URLVariables = null):URLRequest {
 	        // TODO: replace data with namevalue pair
 	        var urlRequest:URLRequest = new URLRequest();
+	        
+	        urlRequest.cacheResponse = false;
+	        urlRequest.useCache = false;
 	        
 	        if(urlVariables == null){
 	        	urlVariables = new URLVariables();
@@ -1093,6 +1220,18 @@ package com.suda.AS3BlipLib
 	        }
 
 	        return urlRequest;
+        }
+        
+        private function onIOError(event:IOErrorEvent):void {
+			dispatchEvent(event);
+        }
+        
+        private function onComplete(event:Event):void {
+			dispatchEvent(event);
+        }
+        
+        private function onOpen(event:Event):void {
+			dispatchEvent(event);
         }
 		
 		private function GetResource(resource:String, eventName:String = ''):void

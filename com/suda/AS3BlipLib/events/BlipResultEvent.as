@@ -1,7 +1,8 @@
 package com.suda.AS3BlipLib.events
 {
 	import com.adobe.webapis.events.ServiceEvent;
-    import flash.events.Event;
+	
+	import flash.events.Event;
 
 	public class BlipResultEvent extends ServiceEvent
 	{
@@ -53,6 +54,8 @@ package com.suda.AS3BlipLib.events
 		public static const ON_DEL_SUB:String = "onDelSub";
 		
 		public static const ON_GET_TAG_UPDATES:String = "onGetTagUpdates";
+		
+		public var path:String = '';
 		
 		public function BlipResultEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false)
         {
